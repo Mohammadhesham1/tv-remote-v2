@@ -29,11 +29,11 @@ jobs:
       - name: Bootstrap Gradle wrapper jar
         working-directory: android
         run: |
-          curl -sL "https://services.gradle.org/distributions/gradle-8.2-bin.zip" -o /tmp/gradle.zip
+          curl -sL "https://services.gradle.org/distributions/gradle-8.4-bin.zip" -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
           GRADLE_BIN=$(find /tmp/gradle-dist -name "gradle" -type f | head -1)
           chmod +x "$GRADLE_BIN"
-          "$GRADLE_BIN" wrapper --gradle-version 8.2 --distribution-type bin
+          "$GRADLE_BIN" wrapper --gradle-version 8.4 --distribution-type bin
           chmod +x gradlew
 
       - name: Cache Gradle packages
