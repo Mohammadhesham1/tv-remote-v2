@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
+
+        <!-- Powered OFF screen -->
+        <LinearLayout
+            android:id="@+id/layoutPoweredOff"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="40dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📺"
+                android:textSize="64sp"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="التليفزيون متوقف عن التشغيل"
+                android:textColor="@color/sub"
+                android:textSize="16sp"
+                android:layout_marginBottom="24dp"/>
+
+            <Button
+                android:id="@+id/btnTurnOn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="تشغيل"
+                android:backgroundTint="@color/surface"
+                android:textColor="@color/text"
+                android:paddingHorizontal="28dp"
+                android:paddingVertical="12dp"/>
+        </LinearLayout>
+
+        <!-- Main Remote UI -->
+        <LinearLayout
+            android:id="@+id/layoutRemote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Top Bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <Button
+                    android:id="@+id/btnPower"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:text="⏻"
+                    android:textSize="20sp"
+                    android:textColor="@color/red"
+                    android:backgroundTint="@color/surface"
+                    android:padding="0dp"/>
+
+                <TextView
+                    android:id="@+id/tvDeviceName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="التيليفزيون"
+                    android:textColor="@color/text"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:background="@color/surface"
+                    android:padding="10dp"
+                    android:layout_marginHorizontal="10dp"/>
+
+                <Button
+                    android:id="@+id/btnSettings"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:text="⚙"
+                    android:textSize="20sp"
+                    android:textColor="@color/sub"
+                    android:backgroundTint="@color/surface"
+                    android:padding="0dp"/>
+            </LinearLayout>
+
+            <!-- Status -->
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/sub"
+                android:textSize="12sp"
+                android:paddingBottom="4dp"/>
+
+            <!-- App Shortcuts -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout android:layout_width="70dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginEnd="12dp">
+                        <Button android:id="@+id/btnNetflix" android:layout_width="70dp" android:layout_height="70dp" android:text="N" android:textSize="24sp" android:textColor="#fff" android:backgroundTint="#E50914" android:textStyle="bold"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Netflix" android:textColor="@color/sub" android:textSize="10sp" android:gravity="center" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="70dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginEnd="12dp">
+                        <Button android:id="@+id/btnYoutube" android:layout_width="70dp" android:layout_height="70dp" android:text="▶" android:textSize="22sp" android:textColor="#fff" android:backgroundTint="#FF0000" android:textStyle="bold"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="YouTube" android:textColor="@color/sub" android:textSize="10sp" android:gravity="center" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="70dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginEnd="12dp">
+                        <Button android:id="@+id/btnPrime" android:layout_width="70dp" android:layout_height="70dp" android:text="P" android:textSize="24sp" android:textColor="#fff" android:backgroundTint="#0094C6" android:textStyle="bold"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Prime" android:textColor="@color/sub" android:textSize="10sp" android:gravity="center" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="70dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginEnd="12dp">
+                        <Button android:id="@+id/btnDisney" android:layout_width="70dp" android:layout_height="70dp" android:text="D+" android:textSize="18sp" android:textColor="#5BC8F5" android:backgroundTint="#1A2E80" android:textStyle="bold"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Disney+" android:textColor="@color/sub" android:textSize="10sp" android:gravity="center" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="70dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:layout_marginEnd="12dp">
+                        <Button android:id="@+id/btnAppleTv" android:layout_width="70dp" android:layout_height="70dp" android:text="tv" android:textSize="18sp" android:textColor="#ccc" android:backgroundTint="#222222"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Apple TV" android:textColor="@color/sub" android:textSize="10sp" android:gravity="center" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="70dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+                        <Button android:id="@+id/btnHbo" android:layout_width="70dp" android:layout_height="70dp" android:text="H" android:textSize="24sp" android:textColor="#fff" android:backgroundTint="#0022E0" android:textStyle="bold"/>
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="HBO Max" android:textColor="@color/sub" android:textSize="10sp" android:gravity="center" android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- D-Pad -->
+            <GridLayout
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_gravity="center"
+                android:rowCount="3"
+                android:columnCount="3"
+                android:layout_marginVertical="8dp">
+
+                <View android:layout_width="72dp" android:layout_height="72dp"/>
+                <Button android:id="@+id/btnUp" android:layout_width="72dp" android:layout_height="72dp" android:text="▲" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp"/>
+                <View android:layout_width="72dp" android:layout_height="72dp"/>
+
+                <Button android:id="@+id/btnLeft" android:layout_width="72dp" android:layout_height="72dp" android:text="◀" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp"/>
+                <Button android:id="@+id/btnOk" android:layout_width="72dp" android:layout_height="72dp" android:text="OK" android:textColor="@color/text" android:backgroundTint="@color/accent" android:textSize="16sp" android:textStyle="bold"/>
+                <Button android:id="@+id/btnRight" android:layout_width="72dp" android:layout_height="72dp" android:text="▶" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp"/>
+
+                <View android:layout_width="72dp" android:layout_height="72dp"/>
+                <Button android:id="@+id/btnDown" android:layout_width="72dp" android:layout_height="72dp" android:text="▼" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp"/>
+                <View android:layout_width="72dp" android:layout_height="72dp"/>
+            </GridLayout>
+
+            <!-- Nav row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingVertical="8dp">
+
+                <Button android:id="@+id/btnBack" android:layout_width="72dp" android:layout_height="52dp" android:text="← رجوع" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="12sp" android:layout_marginHorizontal="8dp"/>
+                <Button android:id="@+id/btnHome" android:layout_width="72dp" android:layout_height="52dp" android:text="⌂ هوم" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="12sp" android:layout_marginHorizontal="8dp"/>
+                <Button android:id="@+id/btnMenu" android:layout_width="72dp" android:layout_height="52dp" android:text="☰ قائمة" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="12sp" android:layout_marginHorizontal="8dp"/>
+            </LinearLayout>
+
+            <!-- Volume + Channel row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="24dp">
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:background="@color/surface" android:padding="8dp">
+                    <Button android:id="@+id/btnChUp" android:layout_width="52dp" android:layout_height="44dp" android:text="∧" android:textColor="@color/text" android:backgroundTint="@color/lift" android:textSize="18sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CH" android:textColor="@color/sub" android:textSize="11sp" android:layout_marginVertical="2dp"/>
+                    <Button android:id="@+id/btnChDown" android:layout_width="52dp" android:layout_height="44dp" android:text="∨" android:textColor="@color/text" android:backgroundTint="@color/lift" android:textSize="18sp"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2" android:orientation="vertical" android:gravity="center">
+                    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <Button android:id="@+id/btnKeyboard" android:layout_width="52dp" android:layout_height="52dp" android:text="⌨" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp" android:layout_marginHorizontal="4dp"/>
+                        <Button android:id="@+id/btnMute" android:layout_width="52dp" android:layout_height="52dp" android:text="🔊" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp" android:layout_marginHorizontal="4dp"/>
+                        <Button android:id="@+id/btnMic" android:layout_width="52dp" android:layout_height="52dp" android:text="🎙" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="20sp" android:layout_marginHorizontal="4dp"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:background="@color/surface" android:padding="8dp">
+                    <Button android:id="@+id/btnVolUp" android:layout_width="52dp" android:layout_height="44dp" android:text="+" android:textColor="@color/text" android:backgroundTint="@color/lift" android:textSize="22sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VOL" android:textColor="@color/sub" android:textSize="11sp" android:layout_marginVertical="2dp"/>
+                    <Button android:id="@+id/btnVolDown" android:layout_width="52dp" android:layout_height="44dp" android:text="−" android:textColor="@color/text" android:backgroundTint="@color/lift" android:textSize="22sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Media Controls -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center" android:paddingVertical="8dp">
+                <Button android:id="@+id/btnPrev" android:layout_width="52dp" android:layout_height="44dp" android:text="⏮" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="18sp" android:layout_marginHorizontal="5dp"/>
+                <Button android:id="@+id/btnRewind" android:layout_width="52dp" android:layout_height="44dp" android:text="⏪" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="18sp" android:layout_marginHorizontal="5dp"/>
+                <Button android:id="@+id/btnPlayPause" android:layout_width="64dp" android:layout_height="52dp" android:text="⏯" android:textColor="@color/text" android:backgroundTint="@color/accent" android:textSize="22sp" android:layout_marginHorizontal="5dp"/>
+                <Button android:id="@+id/btnFastFwd" android:layout_width="52dp" android:layout_height="44dp" android:text="⏩" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="18sp" android:layout_marginHorizontal="5dp"/>
+                <Button android:id="@+id/btnNext" android:layout_width="52dp" android:layout_height="44dp" android:text="⏭" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="18sp" android:layout_marginHorizontal="5dp"/>
+            </LinearLayout>
+
+            <!-- Color Buttons -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center" android:paddingVertical="8dp">
+                <Button android:id="@+id/btnRed"    android:layout_width="60dp" android:layout_height="40dp" android:text="●" android:textColor="#fff" android:backgroundTint="#FF453A" android:textSize="18sp" android:layout_marginHorizontal="6dp"/>
+                <Button android:id="@+id/btnGreen"  android:layout_width="60dp" android:layout_height="40dp" android:text="●" android:textColor="#fff" android:backgroundTint="#30D158" android:textSize="18sp" android:layout_marginHorizontal="6dp"/>
+                <Button android:id="@+id/btnYellow" android:layout_width="60dp" android:layout_height="40dp" android:text="●" android:textColor="#fff" android:backgroundTint="#FFD60A" android:textSize="18sp" android:layout_marginHorizontal="6dp"/>
+                <Button android:id="@+id/btnBlue"   android:layout_width="60dp" android:layout_height="40dp" android:text="●" android:textColor="#fff" android:backgroundTint="#0A84FF" android:textSize="18sp" android:layout_marginHorizontal="6dp"/>
+            </LinearLayout>
+
+            <!-- Number Pad -->
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:rowCount="4"
+                android:columnCount="3"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="8dp"
+                android:useDefaultMargins="true">
+
+                <Button android:id="@+id/btn1" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="1" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn2" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="2" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn3" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="3" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn4" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="4" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn5" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="5" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn6" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="6" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn7" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="7" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn8" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="8" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <Button android:id="@+id/btn9" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="9" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <View android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1"/>
+                <Button android:id="@+id/btn0" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:text="0" android:textColor="@color/text" android:backgroundTint="@color/surface" android:textSize="22sp"/>
+                <View android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1"/>
+            </GridLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

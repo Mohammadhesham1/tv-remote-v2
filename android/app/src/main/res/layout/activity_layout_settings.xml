@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp">
+
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:text="‹"
+            android:textColor="@color/text"
+            android:backgroundTint="@color/surface"
+            android:textSize="22sp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="التخطيط عن بُعد"
+            android:textColor="@color/text"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+
+        <View android:layout_width="44dp" android:layout_height="44dp"/>
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/separator"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="نمط التنقل"
+        android:textColor="@color/dim"
+        android:textSize="12sp"
+        android:gravity="end"
+        android:padding="12dp"/>
+
+    <RadioGroup
+        android:id="@+id/rgNavMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp">
+
+        <RadioButton
+            android:id="@+id/rbDpad"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="D-Pad كلاسيكي"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:gravity="end|center_vertical"
+            android:layoutDirection="rtl"/>
+
+        <RadioButton
+            android:id="@+id/rbTouch"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="لوحة اللمس"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:gravity="end|center_vertical"
+            android:layoutDirection="rtl"/>
+    </RadioGroup>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/separator"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="الصف السريع (تحت الـ D-Pad)"
+        android:textColor="@color/dim"
+        android:textSize="12sp"
+        android:gravity="end"
+        android:padding="12dp"/>
+
+    <RadioGroup
+        android:id="@+id/rgQaMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp">
+
+        <RadioButton
+            android:id="@+id/rbApps"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="اختصارات التطبيقات"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:gravity="end|center_vertical"
+            android:layoutDirection="rtl"/>
+
+        <RadioButton
+            android:id="@+id/rbColor"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="أزرار الألوان"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:gravity="end|center_vertical"
+            android:layoutDirection="rtl"/>
+
+        <RadioButton
+            android:id="@+id/rbMedia"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="أزرار الميديا"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:gravity="end|center_vertical"
+            android:layoutDirection="rtl"/>
+
+        <RadioButton
+            android:id="@+id/rbNone"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="مخفي"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:gravity="end|center_vertical"
+            android:layoutDirection="rtl"/>
+    </RadioGroup>
+
+</LinearLayout>
