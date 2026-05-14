@@ -6,7 +6,6 @@ import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,44 +13,37 @@ import java.util.concurrent.Executors;
 import javax.net.ssl.*;
 
 /**
- * Handles the Android TV Remote Protocol v2 pairing flow.
- *
- * Flow:
- *   1. TLS connect to TV on port 6467
- *   2. Send PairingRequest  -> receive PairingRequestAck (get server cert)
- *   3. Send OptionsRequest  -> receive OptionsResponse
- *   4. Send ConfigRequest   -> receive ConfigResponse
- *   5. User enters 6-char code shown on TV screen
- *   6. Send SecretRequest   -> receive SecretResponse (status 200 = success)
+ * Handles ATV Remote Protocol v2 pairing flow.
+ * SSLContext mirrors KeyStoreManager.getKeyManagers() from reference lib:
+ *   KeyManagerFactory.getDefaultAlgorithm() + empty password.
  */
 public class AtvPairing {
 
     private static final String TAG = "AtvPairing";
 
     public interface PairingCallback {
-        void onCodeRequired();          // TV is showing a code, user needs to enter it
-        void onSuccess();               // Pairing complete
-        void onError(String message);   // Something went wrong
+        void onCodeRequired();
+        void onSuccess();
+        void onError(String message);
     }
 
-    private final String tvHost;
-    private final AtvCertManager certManager;
+    private final String          tvHost;
+    private final AtvCertManager  certManager;
     private final PairingCallback callback;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler          mainHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService  executor    = Executors.newSingleThreadExecutor();
 
-    private Socket socket;
-    private DataInputStream in;
+    private Socket           socket;
+    private DataInputStream  in;
     private DataOutputStream out;
 
-    // Server certificate data (for secret computation)
     private byte[] serverModulus;
     private byte[] serverExponent;
 
     public AtvPairing(String tvHost, AtvCertManager certManager, PairingCallback callback) {
-        this.tvHost = tvHost;
+        this.tvHost      = tvHost;
         this.certManager = certManager;
-        this.callback = callback;
+        this.callback    = callback;
     }
 
     public void startPairing() {
@@ -68,20 +60,20 @@ public class AtvPairing {
     }
 
     private void connectTls() throws Exception {
-        // Build SSLContext with our client cert, trust-all server (TV uses self-signed)
-        SSLContext sslCtx = SSLContext.getInstance("TLS");
-
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        // Mirrors KeyStoreManager.getKeyManagers()
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+                KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(certManager.getKeyStore(), certManager.getKeyStorePassword());
 
-        // Trust-all for TV's self-signed cert
-        TrustManager[] trustAll = new TrustManager[]{new X509TrustManagerAll()};
+        // Trust-all for TV self-signed cert
+        TrustManager[] trustAll = new TrustManager[]{new TrustAllManager()};
 
+        SSLContext sslCtx = SSLContext.getInstance("TLS");
         sslCtx.init(kmf.getKeyManagers(), trustAll, new java.security.SecureRandom());
 
         SSLSocketFactory factory = sslCtx.getSocketFactory();
         SSLSocket ssl = (SSLSocket) factory.createSocket(tvHost, AtvProtocol.PORT_PAIRING);
-        ssl.setEnabledProtocols(new String[]{"TLSv1.2", "TLSv1.3"});
+        ssl.setUseClientMode(true);
         ssl.startHandshake();
 
         socket = ssl;
@@ -95,10 +87,8 @@ public class AtvPairing {
         AtvProtocol.writeMessage(out, AtvProtocol.buildPairingRequest(
                 "androidtvremote2", "TVRemote App"));
         byte[] ack = AtvProtocol.readMessage(in);
-        int type = AtvProtocol.parseMessageType(ack);
-        Log.d(TAG, "Got message type: " + type);
+        Log.d(TAG, "PairingAck type=" + AtvProtocol.parseMessageType(ack));
 
-        // Parse server certificate from ack
         byte[][] serverCert = AtvProtocol.parseServerCertificate(ack);
         if (serverCert != null) {
             serverModulus  = serverCert[0];
@@ -107,37 +97,36 @@ public class AtvPairing {
 
         // Step 2: Options
         AtvProtocol.writeMessage(out, AtvProtocol.buildOptionsRequest());
-        AtvProtocol.readMessage(in); // options response
+        AtvProtocol.readMessage(in);
 
-        // Step 3: Configuration
+        // Step 3: Config
         AtvProtocol.writeMessage(out, AtvProtocol.buildConfigRequest());
-        AtvProtocol.readMessage(in); // config response
+        AtvProtocol.readMessage(in);
 
-        // Now TV should show code on screen
+        // TV now shows code
         mainHandler.post(callback::onCodeRequired);
     }
 
-    /** Call after user enters the 6-char code */
     public void submitCode(String code) {
         executor.execute(() -> {
             try {
                 byte[] secretMsg = AtvProtocol.buildSecretRequest(
                         certManager.getCertModulus(),
                         certManager.getCertExponent(),
-                        serverModulus != null ? serverModulus : new byte[1],
+                        serverModulus  != null ? serverModulus  : new byte[1],
                         serverExponent != null ? serverExponent : new byte[1],
                         code);
                 AtvProtocol.writeMessage(out, secretMsg);
                 byte[] response = AtvProtocol.readMessage(in);
                 int status = AtvProtocol.parseStatus(response);
-                Log.d(TAG, "Secret response status: " + status);
+                Log.d(TAG, "Secret status: " + status);
                 if (status == 200) {
                     mainHandler.post(callback::onSuccess);
                 } else {
                     mainHandler.post(() -> callback.onError("كود خاطئ، حاول تاني"));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Submit code error", e);
+                Log.e(TAG, "submitCode error", e);
                 mainHandler.post(() -> callback.onError(e.getMessage()));
             } finally {
                 close();
@@ -149,13 +138,11 @@ public class AtvPairing {
         try { if (socket != null) socket.close(); } catch (Exception ignored) {}
     }
 
-    /** Trust-all TrustManager (safe for local LAN self-signed certs) */
-    private static class X509TrustManagerAll implements javax.net.ssl.X509TrustManager {
-        @Override
-        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
-        @Override
-        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
-        @Override
-        public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
+    private static class TrustAllManager implements X509TrustManager {
+        @Override public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
+        @Override public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
+        @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+            return new java.security.cert.X509Certificate[0];
+        }
     }
 }
