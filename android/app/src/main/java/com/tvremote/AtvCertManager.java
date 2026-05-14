@@ -99,7 +99,7 @@ public class AtvCertManager {
         certGen.setNotAfter(expiryDate);
         certGen.setSubjectDN(dnName);
         certGen.setPublicKey(kp.getPublic());
-        certGen.setSignatureAlgorithm("SHA256WithRSAEncryption");
+        certGen.setSignatureAlgorithm("SHA256withRSA");
 
         // generate() with "BC" provider — exact same call as SslUtil
         certificate = certGen.generate(kp.getPrivate(), "BC");
