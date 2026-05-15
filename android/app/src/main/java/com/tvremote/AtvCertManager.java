@@ -45,8 +45,10 @@ public class AtvCertManager {
 
     public AtvCertManager(Context ctx) {
         this.ctx = ctx.getApplicationContext();
-        // Register BC provider — same as SslUtil.generateX509V1Certificate()
-        Security.addProvider(new BouncyCastleProvider());
+        // Android has an old built-in BC that conflicts — remove it first,
+        // then insert our full BC at position 1 (highest priority)
+        Security.removeProvider("BC");
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
     }
 
     public void init() throws Exception {
