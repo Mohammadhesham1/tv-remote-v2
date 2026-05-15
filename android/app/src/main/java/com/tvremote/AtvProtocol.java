@@ -8,131 +8,107 @@ import java.security.cert.Certificate;
 import java.security.interfaces.RSAPublicKey;
 
 /**
- * Android TV Remote Protocol v2 - message framing + builders.
+ * Android TV Remote Protocol v2
  *
- * Wire framing (from kunal52/AndroidTvRemote MessageManager + PacketParser):
- *   [1 byte length][protobuf bytes]
+ * Wire format: [1 byte length][protobuf payload]
  *
- * PairingMessage (proto) fields:
- *   field 1 = status (varint)       STATUS_OK = 200
- *   field 2 = protocol_version (varint) = 2
- *   field 3 = pairing_request (embedded)
- *   field 4 = pairing_request_ack (embedded)
- *   field 5 = pairing_option (embedded)
- *   field 6 = pairing_option_ack (embedded)
- *   field 7 = pairing_configuration (embedded)
- *   field 8 = pairing_configuration_ack (embedded)
- *   field 9 = pairing_secret (embedded)
- *   field 10 = pairing_secret_ack (embedded)
+ * PairingMessage fields (from wire analysis in Aymkdn wiki):
+ *   field 1 = protocol_version (varint) = 2    → tag byte = 8
+ *   field 2 = status (varint) = 200             → tag byte = 16, then 200,1 (varint)
+ *   field 10 = pairing_request                  → tag byte = 82
+ *   field 11 = pairing_request_ack              → tag byte = 90
+ *   field 20 = pairing_option                   → tag bytes = 162, 1
+ *   field 21 = pairing_option_ack               → tag bytes = 170, 1
+ *   field 30 = pairing_configuration            → tag bytes = 242, 1
+ *   field 31 = pairing_configuration_ack        → tag bytes = 250, 1
+ *   field 40 = pairing_secret                   → tag bytes = 194, 2 (then 34,10,32 for secret)
+ *   field 41 = pairing_secret_ack               → tag bytes = 202, 2
+ *
+ * Verified byte sequences from wiki:
+ *   Pairing:  [45][8,2, 16,200,1, 82,43, 10,21,...serviceName, 18,13,...clientName]
+ *   Option:   [16][8,2, 16,200,1, 162,1,8, 10,4,8,3,16,6, 24,1]
+ *   Config:   [16][8,2, 16,200,1, 242,1,8, 10,4,8,3,16,6, 16,1]
+ *   Secret:   [42][8,2, 16,200,1, 194,2,34,10,32, ...32 bytes secret]
  */
 public class AtvProtocol {
 
     public static final int PORT_PAIRING = 6467;
     public static final int PORT_CONTROL = 6466;
 
-    // PairingMessage.Status.STATUS_OK = 200
-    private static final int STATUS_OK = 200;
-    // protocol_version = 2
-    private static final int PROTOCOL_VERSION = 2;
-
-    // -----------------------------------------------------------------------
-    // Wire framing — matches MessageManager.addLengthAndCreate() and
-    // PacketParser.run(): single byte length prefix
-    // -----------------------------------------------------------------------
-
+    // Wire framing: single byte length prefix (from MessageManager.addLengthAndCreate)
     public static void writeMessage(DataOutputStream out, byte[] data) throws IOException {
-        out.write(data.length & 0xFF);   // single byte length
+        out.write(data.length & 0xFF);
         out.write(data);
         out.flush();
     }
 
     public static byte[] readMessage(DataInputStream in) throws IOException {
-        int length = in.read() & 0xFF;   // single byte length
+        int length = in.read() & 0xFF;
         if (length <= 0) throw new IOException("Zero length message");
         byte[] data = new byte[length];
         in.readFully(data);
         return data;
     }
 
-    // -----------------------------------------------------------------------
-    // Pairing message builders
-    // Field numbering from Pairingmessage.proto (kunal52 reference):
-    //   PairingMessage:
-    //     1 = status, 2 = protocol_version
-    //     3 = pairing_request, 4 = pairing_request_ack
-    //     5 = pairing_option,  6 = pairing_option_ack
-    //     7 = pairing_configuration, 8 = pairing_configuration_ack
-    //     9 = pairing_secret, 10 = pairing_secret_ack
-    //
-    //   PairingRequest:     1=service_name, 2=client_name
-    //   PairingOption:      2=preferred_role, 3=input_encodings (repeated)
-    //   PairingEncoding:    1=type(HEXADECIMAL=3), 2=symbol_length
-    //   PairingConfiguration: 2=client_role, 3=encoding
-    //   PairingSecret:      1=secret (bytes)
-    // -----------------------------------------------------------------------
-
+    /**
+     * Pairing request — verified bytes from wiki:
+     * [8,2, 16,200,1, 82,LENGTH, 10,LEN,serviceName, 18,LEN,clientName]
+     */
     public static byte[] buildPairingRequest(String clientName, String serviceName) {
-        // PairingRequest inner message
-        ProtoWriter req = new ProtoWriter();
-        req.writeStringField(1, serviceName);
-        req.writeStringField(2, clientName);
+        byte[] svcBytes = utf8(serviceName);
+        byte[] cliBytes = utf8(clientName);
 
-        // PairingMessage outer
-        ProtoWriter msg = new ProtoWriter();
-        msg.writeVarintField(1, STATUS_OK);
-        msg.writeVarintField(2, PROTOCOL_VERSION);
-        msg.writeBytesField(3, req.toBytes());
-        return msg.toBytes();
-    }
+        // inner = field10(service_name) + field18(client_name) in PairingRequest proto
+        // PairingRequest: field 1=service_name, field 2=client_name
+        // field1 tag=10, field2 tag=18
+        byte[] inner = concat(
+            new byte[]{10}, varint(svcBytes.length), svcBytes,
+            new byte[]{18}, varint(cliBytes.length), cliBytes
+        );
 
-    public static byte[] buildOptionsRequest() {
-        // PairingEncoding: HEXADECIMAL=3, symbol_length=6
-        ProtoWriter enc = new ProtoWriter();
-        enc.writeVarintField(1, 3);  // ENCODING_TYPE_HEXADECIMAL
-        enc.writeVarintField(2, 6);  // symbol_length
-
-        // PairingOption: preferred_role=ROLE_TYPE_INPUT=1, input_encodings
-        ProtoWriter opt = new ProtoWriter();
-        opt.writeVarintField(2, 1);              // ROLE_TYPE_INPUT
-        opt.writeBytesField(3, enc.toBytes());   // input_encodings (repeated, one entry)
-
-        ProtoWriter msg = new ProtoWriter();
-        msg.writeVarintField(1, STATUS_OK);
-        msg.writeVarintField(2, PROTOCOL_VERSION);
-        msg.writeBytesField(5, opt.toBytes());
-        return msg.toBytes();
-    }
-
-    public static byte[] buildConfigRequest() {
-        // PairingEncoding
-        ProtoWriter enc = new ProtoWriter();
-        enc.writeVarintField(1, 3);
-        enc.writeVarintField(2, 6);
-
-        // PairingConfiguration: client_role=ROLE_TYPE_INPUT=1, encoding
-        ProtoWriter cfg = new ProtoWriter();
-        cfg.writeVarintField(2, 1);             // client_role
-        cfg.writeBytesField(3, enc.toBytes());  // encoding
-
-        ProtoWriter msg = new ProtoWriter();
-        msg.writeVarintField(1, STATUS_OK);
-        msg.writeVarintField(2, PROTOCOL_VERSION);
-        msg.writeBytesField(7, cfg.toBytes());
-        return msg.toBytes();
+        // outer: [8,2][16,200,1][82,innerLen][inner]
+        return concat(
+            new byte[]{8, 2},           // protocol_version=2
+            new byte[]{16, (byte)200, 1}, // status=200 (varint 200 = 0xC8 0x01)
+            new byte[]{82},             // field 10, wire type 2 = (10<<3)|2 = 82
+            varint(inner.length),
+            inner
+        );
     }
 
     /**
-     * Build secret request using Polo protocol (from PairingChallengeResponse.getAlpha):
-     *   secret = SHA-256(
-     *       removeLeadingNulls(clientModulus) +
-     *       removeLeadingNulls(clientExponent) +
-     *       removeLeadingNulls(serverModulus) +
-     *       removeLeadingNulls(serverExponent) +
-     *       nonce
-     *   )
-     *   nonce = last (symbolLength/2) bytes of the hex code = last 3 bytes (6 hex chars)
-     *
-     * Then gamma = alpha[0..2] + nonce[0..2] (6 bytes total, but we send alpha as secret)
+     * Option request — verified bytes from wiki:
+     * [8,2, 16,200,1, 162,1,8, 10,4,8,3,16,6, 24,1]
+     */
+    public static byte[] buildOptionsRequest() {
+        return new byte[]{
+            8, 2,                       // protocol_version=2
+            16, (byte)200, 1,           // status=200
+            (byte)162, 1, 8,            // field 20, wire type 2 = (20<<3)|2=162 → [162,1]; length=8
+            10, 4, 8, 3, 16, 6,         // encoding: field1=tag10,len4,[type=3,symlen=6]
+            24, 1                       // preferred_role=1
+        };
+    }
+
+    /**
+     * Config request — verified bytes from wiki:
+     * [8,2, 16,200,1, 242,1,8, 10,4,8,3,16,6, 16,1]
+     */
+    public static byte[] buildConfigRequest() {
+        return new byte[]{
+            8, 2,                       // protocol_version=2
+            16, (byte)200, 1,           // status=200
+            (byte)242, 1, 8,            // field 30, wire type 2 = (30<<3)|2=242 → [242,1]; length=8
+            10, 4, 8, 3, 16, 6,         // encoding
+            16, 1                       // client_role=1
+        };
+    }
+
+    /**
+     * Secret request — verified bytes from wiki:
+     * [8,2, 16,200,1, 194,2,34,10,32, ...32bytes]
+     * Secret = SHA-256(clientMod+clientExp+serverMod+serverExp+nonce)
+     * nonce = last 4 hex chars of code = 2 bytes
      */
     public static byte[] buildSecretRequest(
             Certificate localCert, Certificate remoteCert, String hexCode) throws Exception {
@@ -140,77 +116,59 @@ public class AtvProtocol {
         RSAPublicKey clientKey = (RSAPublicKey) localCert.getPublicKey();
         RSAPublicKey serverKey = (RSAPublicKey) remoteCert.getPublicKey();
 
-        byte[] clientModulus  = removeLeadingNulls(clientKey.getModulus().abs().toByteArray());
-        byte[] clientExponent = removeLeadingNulls(clientKey.getPublicExponent().abs().toByteArray());
-        byte[] serverModulus  = removeLeadingNulls(serverKey.getModulus().abs().toByteArray());
-        byte[] serverExponent = removeLeadingNulls(serverKey.getPublicExponent().abs().toByteArray());
+        byte[] clientMod = removeLeadingNulls(clientKey.getModulus().abs().toByteArray());
+        byte[] clientExp = removeLeadingNulls(clientKey.getPublicExponent().abs().toByteArray());
+        byte[] serverMod = removeLeadingNulls(serverKey.getModulus().abs().toByteArray());
+        byte[] serverExp = removeLeadingNulls(serverKey.getPublicExponent().abs().toByteArray());
 
-        // nonce = hex code as bytes (6 hex chars = 3 bytes)
-        byte[] nonce = hexStringToBytes(hexCode);
+        // nonce = last 4 hex chars of 6-char code = last 2 bytes
+        String last4 = hexCode.substring(hexCode.length() - 4);
+        byte[] nonce = hexToBytes(last4);
 
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        digest.update(clientModulus);
-        digest.update(clientExponent);
-        digest.update(serverModulus);
-        digest.update(serverExponent);
-        digest.update(nonce);
-        byte[] alpha = digest.digest();
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(clientMod);
+        md.update(clientExp);
+        md.update(serverMod);
+        md.update(serverExp);
+        md.update(nonce);
+        byte[] alpha = md.digest(); // 32 bytes
 
-        // PairingSecret: field 1 = secret bytes (alpha)
-        ProtoWriter secret = new ProtoWriter();
-        secret.writeBytesField(1, alpha);
-
-        ProtoWriter msg = new ProtoWriter();
-        msg.writeVarintField(1, STATUS_OK);
-        msg.writeVarintField(2, PROTOCOL_VERSION);
-        msg.writeBytesField(9, secret.toBytes());
-        return msg.toBytes();
+        // [8,2][16,200,1][194,2,34,10,32][32 bytes]
+        // field 40 tag = (40<<3)|2 = 322 → varint [194,2]; inner=[34,10,32,alpha...]
+        // inner: 34=length of sub-msg, 10=field1 tag, 32=length, alpha
+        return concat(
+            new byte[]{8, 2},
+            new byte[]{16, (byte)200, 1},
+            new byte[]{(byte)194, 2, 34, 10, 32},
+            alpha
+        );
     }
 
-    private static byte[] removeLeadingNulls(byte[] in) {
-        int offset = 0;
-        while (offset < in.length && in[offset] == 0) offset++;
-        if (offset == 0) return in;
-        byte[] out = new byte[in.length - offset];
-        System.arraycopy(in, offset, out, 0, out.length);
-        return out;
-    }
-
-    private static byte[] hexStringToBytes(String hex) {
-        if (hex.length() % 2 != 0) hex = "0" + hex;
-        byte[] result = new byte[hex.length() / 2];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
-        }
-        return result;
-    }
-
-    /** Parse the status field from a PairingMessage */
     public static int parseStatus(byte[] data) {
-        ProtoReader pr = new ProtoReader(data);
-        while (pr.hasMore()) {
-            int tag = pr.readTag();
-            int fn = tag >>> 3, wt = tag & 7;
-            if (fn == 1 && wt == 0) return pr.readVarint();
-            pr.skip(wt);
+        // status is field 2, but after reading wiki: field2 tag=16, value=200 (varint C8 01)
+        for (int i = 0; i < data.length - 1; i++) {
+            if ((data[i] & 0xFF) == 16) {
+                int val = 0, shift = 0, j = i + 1;
+                int b;
+                do {
+                    b = data[j++] & 0xFF;
+                    val |= (b & 0x7F) << shift;
+                    shift += 7;
+                } while ((b & 0x80) != 0 && j < data.length);
+                return val;
+            }
         }
         return -1;
     }
 
-    /** Returns field number of first embedded message field (to identify message type) */
     public static int parseMessageType(byte[] data) {
-        ProtoReader pr = new ProtoReader(data);
-        while (pr.hasMore()) {
-            int tag = pr.readTag();
-            int fn = tag >>> 3, wt = tag & 7;
-            if (wt == 2 && fn >= 3) return fn;
-            pr.skip(wt);
-        }
+        // Return first multi-byte tag value as identifier
+        if (data.length > 2 && (data[0] & 0xFF) == 8) return data[5] & 0xFF;
         return -1;
     }
 
     // -----------------------------------------------------------------------
-    // Control (RemoteMessage) builders
+    // Control (RemoteMessage) — field 10=remote_configure, field 4=key_inject
     // -----------------------------------------------------------------------
 
     public static byte[] buildKeyCommand(int keyCode, int action) {
@@ -288,18 +246,55 @@ public class AtvProtocol {
     }
 
     // -----------------------------------------------------------------------
-    // Minimal protobuf helpers
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private static byte[] removeLeadingNulls(byte[] in) {
+        int offset = 0;
+        while (offset < in.length && in[offset] == 0) offset++;
+        if (offset == 0) return in;
+        byte[] out = new byte[in.length - offset];
+        System.arraycopy(in, offset, out, 0, out.length);
+        return out;
+    }
+
+    private static byte[] hexToBytes(String hex) {
+        if (hex.length() % 2 != 0) hex = "0" + hex;
+        byte[] result = new byte[hex.length() / 2];
+        for (int i = 0; i < result.length; i++)
+            result[i] = (byte) Integer.parseInt(hex.substring(2*i, 2*i+2), 16);
+        return result;
+    }
+
+    private static byte[] utf8(String s) {
+        try { return s.getBytes("UTF-8"); } catch (Exception e) { return new byte[0]; }
+    }
+
+    private static byte[] varint(int value) {
+        java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+        while ((value & ~0x7F) != 0) { buf.write((value & 0x7F) | 0x80); value >>>= 7; }
+        buf.write(value);
+        return buf.toByteArray();
+    }
+
+    private static byte[] concat(byte[]... arrays) {
+        int total = 0;
+        for (byte[] a : arrays) total += a.length;
+        byte[] result = new byte[total];
+        int pos = 0;
+        for (byte[] a : arrays) { System.arraycopy(a, 0, result, pos, a.length); pos += a.length; }
+        return result;
+    }
+
+    // -----------------------------------------------------------------------
+    // ProtoWriter/Reader for control messages
     // -----------------------------------------------------------------------
 
     public static class ProtoWriter {
         private final java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
-
-        public void writeVarintField(int fn, int value) {
-            writeTag(fn, 0); writeVarintRaw(value);
-        }
+        public void writeVarintField(int fn, int value) { writeTag(fn, 0); writeVarintRaw(value); }
         public void writeStringField(int fn, String value) {
-            byte[] b;
-            try { b = value.getBytes("UTF-8"); } catch (Exception e) { b = new byte[0]; }
+            byte[] b; try { b = value.getBytes("UTF-8"); } catch (Exception e) { b = new byte[0]; }
             writeBytesField(fn, b);
         }
         public void writeBytesField(int fn, byte[] value) {
@@ -326,13 +321,9 @@ public class AtvProtocol {
             return r;
         }
         public byte[] readBytes() {
-            int len = readVarint();
-            byte[] out = new byte[len];
-            System.arraycopy(data, pos, out, 0, len); pos += len;
-            return out;
+            int len = readVarint(); byte[] out = new byte[len];
+            System.arraycopy(data, pos, out, 0, len); pos += len; return out;
         }
-        public void skip(int wt) {
-            switch (wt) { case 0: readVarint(); break; case 2: readBytes(); break; }
-        }
+        public void skip(int wt) { switch(wt) { case 0: readVarint(); break; case 2: readBytes(); break; } }
     }
 }
