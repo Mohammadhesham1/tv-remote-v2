@@ -154,16 +154,18 @@ public class RemoteConnection {
         AtvProtocol.writeMessage(out, new byte[]{18, 3, 8, (byte)238, 4});
         Log.d(TAG, "→ config2");
 
-        // Step 6: Read 3 server info messages (power, app, volume) — consume them
-        for (int i = 0; i < 3; i++) {
+        // Step 6: Drain any initial server messages with short timeout
+        sslSocket.setSoTimeout(2000);
+        for (int i = 0; i < 10; i++) {
             try {
                 byte[] info = AtvProtocol.readMessage(in);
-                Log.d(TAG, "← server info " + i + " (" + info.length + " bytes)");
-            } catch (Exception e) {
-                Log.w(TAG, "Info msg " + i + " read failed: " + e.getMessage());
+                Log.d(TAG, "u2190 server info " + i + " (" + info.length + " bytes)");
+            } catch (java.net.SocketTimeoutException e) {
+                Log.d(TAG, "No more initial messages after " + i);
                 break;
             }
         }
+        sslSocket.setSoTimeout(0); // infinite for read loop
 
         connected = true;
         Log.d(TAG, "Control ready");
