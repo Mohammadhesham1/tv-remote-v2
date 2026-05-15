@@ -6,17 +6,13 @@ import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.*;
 
-/**
- * Handles ATV Remote Protocol v2 pairing flow.
- * SSLContext mirrors KeyStoreManager.getKeyManagers() from reference lib:
- *   KeyManagerFactory.getDefaultAlgorithm() + empty password.
- */
 public class AtvPairing {
 
     private static final String TAG = "AtvPairing";
@@ -52,42 +48,48 @@ public class AtvPairing {
                 connectTls();
                 doPairingHandshake();
             } catch (Exception e) {
-                Log.e(TAG, "Pairing error", e);
-                mainHandler.post(() -> callback.onError(e.getMessage()));
+                Log.e(TAG, "Pairing error: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+                String msg = e.getClass().getSimpleName() + ": " + e.getMessage();
+                mainHandler.post(() -> callback.onError(msg));
                 close();
             }
         });
     }
 
     private void connectTls() throws Exception {
-        // Mirrors KeyStoreManager.getKeyManagers()
+        Log.d(TAG, "Step 1: init KeyManagerFactory for " + tvHost);
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                 KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(certManager.getKeyStore(), certManager.getKeyStorePassword());
 
-        // Trust-all for TV self-signed cert
+        Log.d(TAG, "Step 2: init SSLContext");
         TrustManager[] trustAll = new TrustManager[]{new TrustAllManager()};
-
         SSLContext sslCtx = SSLContext.getInstance("TLS");
         sslCtx.init(kmf.getKeyManagers(), trustAll, new java.security.SecureRandom());
 
+        Log.d(TAG, "Step 3: TCP connect to " + tvHost + ":" + AtvProtocol.PORT_PAIRING);
+        Socket plain = new Socket();
+        plain.connect(new InetSocketAddress(tvHost, AtvProtocol.PORT_PAIRING), 5000);
+        plain.setSoTimeout(10000);
+
+        Log.d(TAG, "Step 4: TLS handshake...");
         SSLSocketFactory factory = sslCtx.getSocketFactory();
-        SSLSocket ssl = (SSLSocket) factory.createSocket(tvHost, AtvProtocol.PORT_PAIRING);
+        SSLSocket ssl = (SSLSocket) factory.createSocket(plain, tvHost, AtvProtocol.PORT_PAIRING, true);
         ssl.setUseClientMode(true);
         ssl.startHandshake();
 
         socket = ssl;
         in  = new DataInputStream(ssl.getInputStream());
         out = new DataOutputStream(ssl.getOutputStream());
-        Log.d(TAG, "TLS pairing connected to " + tvHost);
+        Log.d(TAG, "TLS connected OK");
     }
 
     private void doPairingHandshake() throws Exception {
-        // Step 1: PairingRequest
+        Log.d(TAG, "Sending PairingRequest...");
         AtvProtocol.writeMessage(out, AtvProtocol.buildPairingRequest(
                 "androidtvremote2", "TVRemote App"));
         byte[] ack = AtvProtocol.readMessage(in);
-        Log.d(TAG, "PairingAck type=" + AtvProtocol.parseMessageType(ack));
+        Log.d(TAG, "Got PairingAck type=" + AtvProtocol.parseMessageType(ack));
 
         byte[][] serverCert = AtvProtocol.parseServerCertificate(ack);
         if (serverCert != null) {
@@ -95,15 +97,15 @@ public class AtvPairing {
             serverExponent = serverCert[1];
         }
 
-        // Step 2: Options
+        Log.d(TAG, "Sending OptionsRequest...");
         AtvProtocol.writeMessage(out, AtvProtocol.buildOptionsRequest());
         AtvProtocol.readMessage(in);
 
-        // Step 3: Config
+        Log.d(TAG, "Sending ConfigRequest...");
         AtvProtocol.writeMessage(out, AtvProtocol.buildConfigRequest());
         AtvProtocol.readMessage(in);
 
-        // TV now shows code
+        Log.d(TAG, "Handshake done — TV should show code now");
         mainHandler.post(callback::onCodeRequired);
     }
 
@@ -123,11 +125,11 @@ public class AtvPairing {
                 if (status == 200) {
                     mainHandler.post(callback::onSuccess);
                 } else {
-                    mainHandler.post(() -> callback.onError("كود خاطئ، حاول تاني"));
+                    mainHandler.post(() -> callback.onError("كود خاطئ (status=" + status + ")"));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "submitCode error", e);
-                mainHandler.post(() -> callback.onError(e.getMessage()));
+                mainHandler.post(() -> callback.onError(e.getClass().getSimpleName() + ": " + e.getMessage()));
             } finally {
                 close();
             }
